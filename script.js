@@ -139,6 +139,37 @@ function draw() {
     ctx.stroke();
 }
 
+// Formattage SI compact pour noms de fichiers
+function fmtSI(val, kind) { // kind: 'Hz' ou 'V'
+    const a = Math.abs(val);
+    let unit = kind, scale = 1;
+    if (kind === 'Hz') {
+        if (a >= 1e6) { unit = 'MHz'; scale = 1e6; }
+        else if (a >= 1e3) { unit = 'kHz'; scale = 1e3; }
+        else { unit = 'Hz'; scale = 1; }
+    } else if (kind === 'V') {
+        if (a < 1e-3) { unit = 'uV'; scale = 1e-6; }   // ASCII: uV (pas µ)
+        else if (a < 1) { unit = 'mV'; scale = 1e-3; }
+        else { unit = 'V'; scale = 1; }
+    }
+    const n = val / scale;
+    // arrondi propre et suppression des zéros inutiles
+    const s = (Math.round(n * 1000) / 1000).toString()
+        .replace(/\.0+$/, '')
+        .replace(/(\.\d*[1-9])0+$/, '$1');
+    return s + unit;
+}
+
+function exportFileNameFromState() {
+    // 'sine' | 'square' | 'triangle' (par défaut 'sine')
+    const wave = (state.wave || 'sine').toLowerCase();
+    const fStr = fmtSI(state.freq, 'Hz');
+    const umStr = fmtSI(Math.abs(state.amp), 'V');   // Umax = Um (crête)
+    const uccStr = fmtSI(state.offset, 'V');
+    return `${wave}_f-${fStr}_Umax-${umStr}_Ucc-${uccStr}.png`;
+}
+
+
 // ========= Knobs (V/div & s/div) =========
 const MIN_ANGLE = 0, MAX_ANGLE = 330;
 function stepAngle(list, idx) { return MIN_ANGLE + (MAX_ANGLE - MIN_ANGLE) * (idx / (list.length - 1)); }
@@ -473,3 +504,79 @@ window.addEventListener('keydown', (e) => {
 
 // Afficher l’état de couplage dès le chargement
 showCouplingStatus();
+
+// ======== Export PNG (fond + trace + aiguilles) ========
+function exportFullPNG() {
+    const bg = document.getElementById('bg');
+    const out = document.createElement('canvas');
+    out.width = bg.naturalWidth;
+    out.height = bg.naturalHeight;
+    const octx = out.getContext('2d');
+
+    // 1) Fond
+    octx.drawImage(bg, 0, 0, out.width, out.height);
+
+    // 2) Zone écran (vars CSS -> px export)
+    const css = getComputedStyle(document.documentElement);
+    const leftPct = parseFloat(css.getPropertyValue('--screen-left'));
+    const topPct = parseFloat(css.getPropertyValue('--screen-top'));
+    const wPct = parseFloat(css.getPropertyValue('--screen-width'));
+    const hPct = parseFloat(css.getPropertyValue('--screen-height'));
+
+    const sx = Math.round(out.width * leftPct / 100);
+    const sy = Math.round(out.height * topPct / 100);
+    const sW = Math.round(out.width * wPct / 100);
+    const sH = Math.round(out.height * hPct / 100);
+
+    // 3) Trace
+    const trace = document.getElementById('trace');
+    octx.drawImage(trace, 0, 0, trace.width, trace.height, sx, sy, sW, sH);
+
+    // 4) Aiguilles des knobs (DOM -> canvas)
+    const bgRect = bg.getBoundingClientRect();
+    const kVRect = document.getElementById('knobV').getBoundingClientRect();
+    const kTRect = document.getElementById('knobT').getBoundingClientRect();
+    const scaleX = out.width / bgRect.width;
+    const scaleY = out.height / bgRect.height;
+    const scaleA = (scaleX + scaleY) / 2;
+
+    function drawNeedleFromRect(r, angleDeg) {
+        const cx = ((r.left - bgRect.left) + r.width / 2) * scaleX;
+        const cy = ((r.top - bgRect.top) + r.height / 2) * scaleY;
+        const len = Math.min(r.width * scaleX, r.height * scaleY) * 0.45;
+        const th = angleDeg * Math.PI / 180;
+        const x2 = cx + Math.sin(th) * len;
+        const y2 = cy - Math.cos(th) * len;
+
+        octx.lineCap = 'round';
+        // liseré clair
+        octx.lineWidth = 6 * scaleA;
+        octx.strokeStyle = 'rgba(255,255,255,0.85)';
+        octx.beginPath(); octx.moveTo(cx, cy); octx.lineTo(x2, y2); octx.stroke();
+        // trait noir
+        octx.lineWidth = 4 * scaleA;
+        octx.strokeStyle = '#111';
+        octx.beginPath(); octx.moveTo(cx, cy); octx.lineTo(x2, y2); octx.stroke();
+        // pastille centrale
+        const capR = 0.09 * Math.min(r.width * scaleX, r.height * scaleY);
+        octx.fillStyle = '#e9e7df';
+        octx.strokeStyle = 'rgba(0,0,0,0.25)';
+        octx.lineWidth = 1 * scaleA;
+        octx.beginPath(); octx.arc(cx, cy, capR, 0, Math.PI * 2); octx.fill(); octx.stroke();
+    }
+
+    // mêmes angles que l’affichage DOM
+    const angV = (MIN_ANGLE + (MAX_ANGLE - MIN_ANGLE) * (vIndex / (VDIV_STEPS.length - 1)));
+    const angT = (MIN_ANGLE + (MAX_ANGLE - MIN_ANGLE) * (tIndex / (TDIV_STEPS.length - 1)));
+    drawNeedleFromRect(kVRect, angV);
+    drawNeedleFromRect(kTRect, angT);
+
+    // 5) Télécharger
+    const a = document.createElement('a');
+    a.href = out.toDataURL('image/png');
+    a.download = exportFileNameFromState();
+    document.body.appendChild(a); a.click(); a.remove();
+}
+
+// Bouton Export
+document.getElementById('btnExport')?.addEventListener('click', exportFullPNG);
