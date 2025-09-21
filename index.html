@@ -10,7 +10,7 @@
 
 <body>
     <div class="app">
-        <!-- PANNEAU ENTRAÎNEMENT UNIQUEMENT -->
+        <!-- PANNEAU ENTRAÎNEMENT -->
         <aside class="sidebar">
             <form class="sidepanel training" id="training" autocomplete="off">
                 <h2>Entraînement</h2>
@@ -24,6 +24,13 @@
                     </select>
                 </label>
 
+                <!-- Boutons de difficulté -->
+                <div class="segmented" id="diffGroup" aria-label="Difficulté">
+                    <button type="button" class="seg active" data-level="easy">Easy</button>
+                    <button type="button" class="seg" data-level="medium">Medium</button>
+                    <button type="button" class="seg" data-level="hard">Hard</button>
+                </div>
+
                 <label>Tolérance (±%)
                     <input id="tolPct" type="number" min="1" max="20" step="1" value="5" />
                 </label>
@@ -35,16 +42,12 @@
                     <button type="button" id="btnValidate" disabled>Valider</button>
                 </div>
 
-                <div class="row">
-                    <button type="button" id="btnNew" disabled>Nouvel exercice</button>
-                    <button type="button" id="btnShow" disabled>Afficher la correction</button>
-                </div>
-
                 <p id="feedback" class="feedback" aria-live="polite"></p>
+                <p id="solution" class="solution" aria-live="polite"></p>
             </form>
         </aside>
 
-        <!-- OSCILLO -->
+        <!-- OSCILLOSCOPE -->
         <div class="wrap">
             <div class="scope" id="scope">
                 <img id="bg" src="Oscilloscope.png" alt="Oscilloscope pédagogique" />

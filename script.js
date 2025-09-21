@@ -5,7 +5,7 @@ const CENTER_TWEAK_PX = -2;
 // Calage horizontal : 50Hz @ 2ms/div ≈ 10 div (20 ms)
 const TIME_SCALE_CORR = 1.039;
 
-// Echelles disponibles
+// Échelles disponibles
 const VDIV_STEPS = [5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001];
 const TDIV_STEPS = [0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0.0005, 0.0002, 0.0001];
 
@@ -17,23 +17,31 @@ let tIndex = TDIV_STEPS.indexOf(0.002);
 const cvs = document.getElementById('trace');
 const ctx = cvs.getContext('2d');
 
-// Panneau entraînement
+// UI entraînement
 const ui = {
     exoType: document.getElementById('exoType'),
     tolPct: document.getElementById('tolPct'),
     answers: document.getElementById('answers'),
     btnGen: document.getElementById('btnGen'),
     btnValidate: document.getElementById('btnValidate'),
-    btnNew: document.getElementById('btnNew'),
-    btnShow: document.getElementById('btnShow'),
-    feedback: document.getElementById('feedback')
+    feedback: document.getElementById('feedback'),
+    solution: document.getElementById('solution'),
+    diffGroup: document.getElementById('diffGroup')
 };
+
+let currentDifficulty = 'easy'; // par défaut; règles à brancher plus tard
+ui.diffGroup?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg[data-level]');
+    if (!btn) return;
+    currentDifficulty = btn.dataset.level;        // 'easy' | 'medium' | 'hard'
+    [...ui.diffGroup.querySelectorAll('.seg')].forEach(b => b.classList.toggle('active', b === btn));
+});
 
 // Centres (en divisions)
 let yCenterDiv = DIV_Y / 2; // vertical
 let xCenterDiv = DIV_X / 2; // horizontal
 
-// ========= Etat interne du signal (pas d'UI manuelle) =========
+// ========= État interne du signal =========
 const state = {
     wave: 'sine',   // 'sine' | 'square' | 'triangle'
     duty: 0.5,      // (pour 'square')
@@ -62,6 +70,9 @@ function resizeCanvasToCSS() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     return true;
 }
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function randIn(min, max) { return min + Math.random() * (max - min); }
 
 // Génère les points du signal courant
 function generateSamples(vPerDiv, sPerDiv) {
@@ -102,7 +113,7 @@ function generateSamples(vPerDiv, sPerDiv) {
         y += (acCoupling ? 0 : DC);
         pts.push({ x, y });
     }
-    return { pts, vPerDiv, DC, A };
+    return { pts, vPerDiv, DC };
 }
 
 function draw() {
@@ -229,34 +240,7 @@ attachKnobDrag(document.getElementById('knobT'), TDIV_STEPS, () => tIndex, (i) =
     window.addEventListener('touchend', onUp);
 })();
 
-// ========= Mode Entraînement =========
-let currentExercise = null; // { kind, trueA, trueVpp, truePer, trueFreq, trueDC }
-
-function randIn(min, max) { return min + Math.random() * (max - min); }
-function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-function buildAnswerFields(kind) {
-    ui.answers.innerHTML = '';
-    const add = (id, label, placeholder) => {
-        const wrap = document.createElement('label');
-        wrap.textContent = label;
-        const inp = document.createElement('input');
-        inp.id = id; inp.type = 'number'; inp.step = '0.001'; inp.placeholder = placeholder;
-        wrap.appendChild(document.createElement('br'));
-        wrap.appendChild(inp);
-        ui.answers.appendChild(wrap);
-    };
-    if (kind === 'amp') add('ansVpp', 'Réponse Vpp (V)', 'ex: 4');
-    else if (kind === 'per') add('ansPer', 'Réponse période (s)', 'ex: 0.02');
-    else if (kind === 'freq') add('ansFreq', 'Réponse fréquence (Hz)', 'ex: 50');
-    else {
-        add('ansVpp', 'Réponse Vpp (V)', 'ex: 4');
-        add('ansPer', 'Réponse période (s)', 'ex: 0.02');
-        add('ansFreq', 'Réponse fréquence (Hz)', 'ex: 50');
-    }
-}
-
-// Ajuste l’échelle pour un affichage confortable
+// ========= Auto-échelle =========
 function autoScale(A, f, DC) {
     const neededVdiv = Math.max((Math.abs(DC) + A) / 3, 0.001);
     let vi = VDIV_STEPS.length - 1;
@@ -276,39 +260,54 @@ function autoScale(A, f, DC) {
     tLabel.textContent = fmtT(TDIV_STEPS[tIndex]);
 }
 
+// ========= Exercices =========
+let currentExercise = null; // { kind, trueA, trueVpp, truePer, trueFreq, trueDC }
+
+function buildAnswerFields(kind) {
+    ui.answers.innerHTML = '';
+    const add = (id, label, placeholder) => {
+        const wrap = document.createElement('label');
+        wrap.textContent = label;
+        const br = document.createElement('br');
+        const inp = document.createElement('input');
+        inp.id = id; inp.type = 'number'; inp.step = '0.001'; inp.placeholder = placeholder;
+        wrap.appendChild(br);
+        wrap.appendChild(inp);
+        ui.answers.appendChild(wrap);
+    };
+    if (kind === 'amp') add('ansVpp', 'Réponse Vpp (V)', 'ex: 4');
+    else if (kind === 'per') add('ansPer', 'Réponse période (s)', 'ex: 0.02');
+    else if (kind === 'freq') add('ansFreq', 'Réponse fréquence (Hz)', 'ex: 50');
+    else {
+        add('ansVpp', 'Réponse Vpp (V)', 'ex: 4');
+        add('ansPer', 'Réponse période (s)', 'ex: 0.02');
+        add('ansFreq', 'Réponse fréquence (Hz)', 'ex: 50');
+    }
+}
+
 function generateExercise() {
     const kind = ui.exoType.value;
     buildAnswerFields(kind);
 
-    // Choix signal (priorité sinus)
+    // (Contrainte selon currentDifficulty à brancher ensuite)
     state.wave = pick(['sine', 'sine', 'sine', 'triangle', 'square']);
     state.duty = randIn(0.3, 0.7);
 
-    // Paramètres raisonnables
     const f = Math.round(randIn(10, 200));           // Hz
     const A = Math.round(randIn(0.5, 4) * 10) / 10;    // V crête
-    const DC = Math.round(randIn(-1.5, 1.5) * 10) / 10;
+    const DC = Math.round(randIn(-1.5, 1.5) * 10) / 10; // V
 
     state.freq = f; state.amp = A; state.offset = DC;
 
     autoScale(A, f, DC);
     draw();
 
-    currentExercise = {
-        kind,
-        trueA: A,
-        trueVpp: 2 * A,
-        truePer: 1 / f,
-        trueFreq: f,
-        trueDC: DC
-    };
+    currentExercise = { kind, trueA: A, trueVpp: 2 * A, truePer: 1 / f, trueFreq: f, trueDC: DC };
 
-    // UI
     ui.btnValidate.disabled = false;
-    ui.btnNew.disabled = false;
-    ui.btnShow.disabled = true;
     ui.feedback.textContent = '';
     ui.feedback.className = 'feedback';
+    ui.solution.textContent = '';
 }
 
 function withinTol(val, ref, tolPct) {
@@ -320,7 +319,8 @@ function validateExercise() {
     if (!currentExercise) return;
     const tol = Math.max(1, Math.min(20, readNum(ui.tolPct, 5)));
 
-    let ok = true, messages = [];
+    let ok = true;
+    const messages = [];
     const get = id => {
         const el = document.getElementById(id);
         return el ? readNum(el, NaN) : NaN;
@@ -330,118 +330,102 @@ function validateExercise() {
         const vpp = get('ansVpp');
         const okV = withinTol(vpp, currentExercise.trueVpp, tol);
         ok = ok && okV;
-        messages.push(okV ? 'Vpp ✅' : `Vpp ❌ (attendu ≈ ${currentExercise.trueVpp.toFixed(3)} V)`);
+        messages.push(okV ? 'Vpp ✅'
+            : `Vpp ❌ (attendu ≈ ${currentExercise.trueVpp.toFixed(3)} V)`);
     }
     if (['per', 'mix'].includes(currentExercise.kind)) {
         const per = get('ansPer');
         const okP = withinTol(per, currentExercise.truePer, tol);
         ok = ok && okP;
-        messages.push(okP ? 'Période ✅' : `Période ❌ (attendu ≈ ${currentExercise.truePer.toFixed(6)} s)`);
-  }
-  if (['freq','mix'].includes(currentExercise.kind)){
-    const fr = get('ansFreq');
-    const okF = withinTol(fr, currentExercise.trueFreq, tol);
-    ok = ok && okF;
-    messages.push(okF ? 'Fréquence ✅' : `Fréquence ❌ (attendu ≈ ${ currentExercise.trueFreq.toFixed(3) } Hz)`);
-  }
+        messages.push(okP ? 'Période ✅'
+            : `Période ❌ (attendu ≈ ${currentExercise.truePer.toFixed(6)} s)`);
+    }
+    if (['freq', 'mix'].includes(currentExercise.kind)) {
+        const fr = get('ansFreq');
+        const okF = withinTol(fr, currentExercise.trueFreq, tol);
+        ok = ok && okF;
+        messages.push(okF ? 'Fréquence ✅'
+            : `Fréquence ❌ (attendu ≈ ${currentExercise.trueFreq.toFixed(3)} Hz)`);
+    }
 
-  ui.feedback.textContent = messages.join(' • ');
-  ui.feedback.className = 'feedback ' + (ok ? 'ok' : 'ko');
-  ui.btnShow.disabled = false;
-}
+    ui.feedback.textContent = messages.join(' • ');
+    ui.feedback.className = 'feedback ' + (ok ? 'ok' : 'ko');
 
-function showSolution(){
-  if (!currentExercise) return;
-  const parts = [];
-  if (['amp','mix'].includes(currentExercise.kind))
-    parts.push(`Vpp = ${ currentExercise.trueVpp.toFixed(3) } V`);
-  if (['per','mix'].includes(currentExercise.kind))
-    parts.push(`Période = ${ currentExercise.truePer.toFixed(6) } s`);
-  if (['freq','mix'].includes(currentExercise.kind))
-    parts.push(`Fréquence = ${ currentExercise.trueFreq.toFixed(3) } Hz`);
-  parts.push(`Décalage DC = ${ currentExercise.trueDC.toFixed(3) } V`);
-  ui.feedback.textContent = parts.join(' • ');
-  ui.feedback.className = 'feedback';
-}
-
-function newExercise(){
-  currentExercise = null;
-  ui.answers.innerHTML = '';
-  ui.btnValidate.disabled = true;
-  ui.btnNew.disabled = true;
-  ui.btnShow.disabled = true;
-  ui.feedback.textContent = '';
-  ui.feedback.className = 'feedback';
+    // Correction auto
+    const parts = [];
+    if (['amp', 'mix'].includes(currentExercise.kind))
+        parts.push(`Vpp = ${currentExercise.trueVpp.toFixed(3)} V`);
+    if (['per', 'mix'].includes(currentExercise.kind))
+        parts.push(`Période = ${currentExercise.truePer.toFixed(6)} s`);
+    if (['freq', 'mix'].includes(currentExercise.kind))
+        parts.push(`Fréquence = ${currentExercise.trueFreq.toFixed(3)} Hz`);
+    parts.push(`Décalage DC = ${currentExercise.trueDC.toFixed(3)} V`);
+    ui.solution.textContent = parts.join(' • ');
 }
 
 // ========= Init / listeners =========
 const bg = document.getElementById('bg');
 const ro = new ResizeObserver(() => draw());
 
-function init(){
-  ro.observe(document.getElementById('scope'));
-  ro.observe(cvs);
-  requestAnimationFrame(() => { draw(); setTimeout(draw, 80); });
+function init() {
+    ro.observe(document.getElementById('scope'));
+    ro.observe(cvs);
+    requestAnimationFrame(() => { draw(); setTimeout(draw, 80); });
 }
-if (bg.complete) init(); else bg.addEventListener('load', init, { once:true });
+if (bg.complete) init(); else bg.addEventListener('load', init, { once: true });
 
 window.addEventListener('resize', draw);
 
 // Pan vertical à la molette + recentrage clic droit
 cvs.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const deltaDiv = (e.deltaY > 0 ? 0.2 : -0.2);
-  yCenterDiv = Math.max(0, Math.min(DIV_Y, yCenterDiv + deltaDiv));
-  draw();
-}, { passive:false });
+    e.preventDefault();
+    const deltaDiv = (e.deltaY > 0 ? 0.2 : -0.2);
+    yCenterDiv = Math.max(0, Math.min(DIV_Y, yCenterDiv + deltaDiv));
+    draw();
+}, { passive: false });
 cvs.addEventListener('contextmenu', (e) => { e.preventDefault(); yCenterDiv = DIV_Y / 2; draw(); });
 
 // Boutons entraînement
 ui.btnGen.addEventListener('click', generateExercise);
 ui.btnValidate.addEventListener('click', validateExercise);
-ui.btnShow.addEventListener('click', showSolution);
-ui.btnNew.addEventListener('click', newExercise);
 
-// ========= Hotspot AC sur l'image (sans changer le HTML/CSS) =========
-// Coordonnées du bouton AC sur ton visuel (en % du conteneur .scope)
-const AC_BTN_X = 12.9;   // pourcent depuis la gauche
-const AC_BTN_Y = 91.6;   // pourcent depuis le haut
-const AC_BTN_R = 2.2;    // rayon en pourcent (≈ clique dans le cercle)
+// ========= Hotspot AC sur l'image =========
+// Coordonnées du bouton AC sur le visuel (en % du conteneur .scope)
+// Ajuste au besoin si tu bouges le bouton.
+const AC_BTN_X = 12.9;   // % depuis la gauche
+const AC_BTN_Y = 91.6;   // % depuis le haut
+const AC_BTN_R = 2.2;    // rayon (%)
 
-document.getElementById('scope').addEventListener('click', (e)=>{
-  const r = e.currentTarget.getBoundingClientRect();
-  const xPct = ((e.clientX - r.left) / r.width) * 100;
-  const yPct = ((e.clientY - r.top)  / r.height) * 100;
+document.getElementById('scope').addEventListener('click', (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const xPct = ((e.clientX - r.left) / r.width) * 100;
+    const yPct = ((e.clientY - r.top) / r.height) * 100;
 
-  // Toggle si le clic tombe dans le disque du bouton AC
-  const dx = xPct - AC_BTN_X, dy = yPct - AC_BTN_Y;
-  const dist = Math.hypot(dx, dy);
-  if (dist <= AC_BTN_R) {
-    acCoupling = !acCoupling;
-    draw();
-    if (ui.feedback) {
-      ui.feedback.textContent = acCoupling ? 'Couplage AC (composante continue supprimée)' :
-                                             'Couplage DC (composante continue visible)';
-      ui.feedback.className = 'feedback';
+    const dx = xPct - AC_BTN_X, dy = yPct - AC_BTN_Y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= AC_BTN_R) {
+        acCoupling = !acCoupling;
+        draw();
+        ui.feedback.textContent = acCoupling
+            ? 'Couplage AC'
+            : 'Couplage DC';
+        ui.feedback.className = 'feedback';
+        e.stopPropagation();
+        return;
     }
-    // on stoppe là pour ne pas déclencher d’autres logiques de clic
-    e.stopPropagation();
-    return;
-  }
 
-  // (outil de repérage des % — utile si tu veux ajuster le hotspot)
-  // console.log(`--left: ${ xPct.toFixed(1) }%; --top: ${ yPct.toFixed(1) }%; `);
+    // Outil de repérage (si besoin) :
+    // console.log(`--left: ${xPct.toFixed(1)}%;  --top: ${yPct.toFixed(1)}%;`);
 });
 
 // Raccourci clavier "A" pour basculer AC/DC
-window.addEventListener('keydown', (e)=>{
-  if (e.key.toLowerCase() === 'a') {
-    acCoupling = !acCoupling;
-    draw();
-    if (ui.feedback) {
-      ui.feedback.textContent = acCoupling ? 'Couplage AC (composante continue supprimée)' :
-                                             'Couplage DC (composante continue visible)';
-      ui.feedback.className = 'feedback';
+window.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'a') {
+        acCoupling = !acCoupling;
+        draw();
+        ui.feedback.textContent = acCoupling
+            ? 'Couplage AC'
+            : 'Couplage DC';
+        ui.feedback.className = 'feedback';
     }
-  }
 });
