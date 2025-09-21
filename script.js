@@ -405,9 +405,9 @@ ui.btnNew.addEventListener('click', newExercise);
 
 // ========= Hotspot AC sur l'image (sans changer le HTML/CSS) =========
 // Coordonnées du bouton AC sur ton visuel (en % du conteneur .scope)
-const AC_BTN_X = 13.0;   // pourcent depuis la gauche
-const AC_BTN_Y = 90.8;   // pourcent depuis le haut
-const AC_BTN_R = 2.6;    // rayon en pourcent (≈ clique dans le cercle)
+const AC_BTN_X = 12.9;   // pourcent depuis la gauche
+const AC_BTN_Y = 91.6;   // pourcent depuis le haut
+const AC_BTN_R = 2.2;    // rayon en pourcent (≈ clique dans le cercle)
 
 document.getElementById('scope').addEventListener('click', (e)=>{
   const r = e.currentTarget.getBoundingClientRect();
