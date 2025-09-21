@@ -35,6 +35,7 @@ body {
     row-gap: clamp(8px, 1.6vw, 20px);
     min-height: 100vh;
     align-items: center;
+    /* centre vertical => même espace haut/bas */
     padding: 6px 12px;
 }
 
@@ -52,10 +53,11 @@ body {
     min-height: 100%;
 }
 
-/* ---- Oscillo ---- */
+/* ---- Oscillo (un peu plus petit pour équilibrer le haut/bas) ---- */
 .scope {
     position: relative;
-    width: min(98vw, calc(98vh * 1.454));
+    /* ↓ Réduit la taille : 86vh au lieu de ~98vh => marges haut/bas égales et visibles */
+    width: min(92vw, calc(86vh * 1.454));
     max-width: 1400px;
     filter: drop-shadow(0 12px 24px rgba(0, 0, 0, .20));
 }
@@ -86,7 +88,7 @@ body {
     border: 1px solid #e2e5ec;
     border-radius: 14px;
     padding: 12px;
-    width: 220px;
+    width: 230px;
     max-width: 92vw;
     box-sizing: border-box;
     backdrop-filter: blur(4px);
@@ -141,7 +143,7 @@ body {
 
 .training .grid-answers {
     display: grid;
-    gap: 8px;
+    gap: 10px;
     grid-template-columns: 1fr;
 }
 
@@ -189,6 +191,23 @@ body {
     background: #0a7d2c;
     color: #fff;
     border-color: #0a7d2c;
+}
+
+/* Ligne réponse (input + unités) */
+.answer-block label {
+    font-size: 12px;
+    color: #333;
+}
+
+.answer-row {
+    display: grid;
+    grid-template-columns: 1fr 92px;
+    gap: 8px;
+    align-items: center;
+}
+
+.answer-row select {
+    padding-right: 6px;
 }
 
 /* ---- Knobs ---- */
@@ -277,7 +296,7 @@ body {
     }
 
     .sidepanel {
-        width: 200px;
+        width: 220px;
         padding: 10px;
     }
 }

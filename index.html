@@ -15,30 +15,19 @@
             <form class="sidepanel training" id="training" autocomplete="off">
                 <h2>Entraînement</h2>
 
-                <label>Type d’exercice
-                    <select id="exoType">
-                        <option value="amp">Amplitude (Vpp)</option>
-                        <option value="per">Période</option>
-                        <option value="freq">Fréquence</option>
-                        <option value="mix">Mixte</option>
-                    </select>
-                </label>
-
-                <!-- Boutons de difficulté -->
+                <!-- Boutons de difficulté = génèrent directement un nouvel exercice -->
                 <div class="segmented" id="diffGroup" aria-label="Difficulté">
                     <button type="button" class="seg active" data-level="easy">Easy</button>
                     <button type="button" class="seg" data-level="medium">Medium</button>
                     <button type="button" class="seg" data-level="hard">Hard</button>
                 </div>
 
-                <label>Tolérance (±%)
-                    <input id="tolPct" type="number" min="1" max="20" step="1" value="5" />
-                </label>
+                <!-- (Tolérance supprimée de l’UI; fixée à 5% en interne) -->
 
                 <div class="grid-answers" id="answers"></div>
 
                 <div class="row">
-                    <button type="button" id="btnGen">Générer</button>
+                    <!-- Plus de bouton Générer ; la difficulté lance l’exercice -->
                     <button type="button" id="btnValidate" disabled>Valider</button>
                 </div>
 
