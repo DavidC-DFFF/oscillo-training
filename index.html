@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Oscilloscope — Entraînement</title>
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+    <div class="app">
+        <!-- PANNEAU ENTRAÎNEMENT UNIQUEMENT -->
+        <aside class="sidebar">
+            <form class="sidepanel training" id="training" autocomplete="off">
+                <h2>Entraînement</h2>
+
+                <label>Type d’exercice
+                    <select id="exoType">
+                        <option value="amp">Amplitude (Vpp)</option>
+                        <option value="per">Période</option>
+                        <option value="freq">Fréquence</option>
+                        <option value="mix">Mixte</option>
+                    </select>
+                </label>
+
+                <label>Tolérance (±%)
+                    <input id="tolPct" type="number" min="1" max="20" step="1" value="5" />
+                </label>
+
+                <div class="grid-answers" id="answers"></div>
+
+                <div class="row">
+                    <button type="button" id="btnGen">Générer</button>
+                    <button type="button" id="btnValidate" disabled>Valider</button>
+                </div>
+
+                <div class="row">
+                    <button type="button" id="btnNew" disabled>Nouvel exercice</button>
+                    <button type="button" id="btnShow" disabled>Afficher la correction</button>
+                </div>
+
+                <p id="feedback" class="feedback" aria-live="polite"></p>
+            </form>
+        </aside>
+
+        <!-- OSCILLO -->
+        <div class="wrap">
+            <div class="scope" id="scope">
+                <img id="bg" src="Oscilloscope.png" alt="Oscilloscope pédagogique" />
+                <canvas id="trace" width="800" height="600" aria-hidden="true"></canvas>
+
+                <!-- Bouton de décalage horizontal (drag) -->
+                <div id="hShift" class="hshift" title="Décalage horizontal (glisser)"></div>
+
+                <!-- Knobs -->
+                <div class="knob" id="knobV" aria-label="V/div">
+                    <div class="value" id="vdivVal">1 V/div</div>
+                    <div class="needle" id="vNeedle"></div>
+                    <div class="cap"></div>
+                </div>
+                <div class="knob" id="knobT" aria-label="sec/div">
+                    <div class="value" id="tdivVal">2 ms/div</div>
+                    <div class="needle" id="tNeedle"></div>
+                    <div class="cap"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./script.js" defer></script>
+</body>
+
+</html>
