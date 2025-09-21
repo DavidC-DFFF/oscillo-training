@@ -329,20 +329,19 @@ function validateExercise() {
     if (['amp', 'mix'].includes(currentExercise.kind)) {
         const vpp = get('ansVpp');
         const okV = withinTol(vpp, currentExercise.trueVpp, tol);
-        ok &= okV;
+        ok = ok && okV;
         messages.push(okV ? 'Vpp ✅' : `Vpp ❌ (attendu ≈ ${currentExercise.trueVpp.toFixed(3)} V)`);
     }
     if (['per', 'mix'].includes(currentExercise.kind)) {
         const per = get('ansPer');
         const okP = withinTol(per, currentExercise.truePer, tol);
-        ok &= okP;
-        messages.push(okP ? 'Période ✅' : `Période ❌ (attendu ≈ ${currentExercise.truePer.toFixed(6)
-    } s`);
+        ok = ok && okP;
+        messages.push(okP ? 'Période ✅' : `Période ❌ (attendu ≈ ${currentExercise.truePer.toFixed(6)} s)`);
   }
   if (['freq','mix'].includes(currentExercise.kind)){
     const fr = get('ansFreq');
     const okF = withinTol(fr, currentExercise.trueFreq, tol);
-    ok &= okF;
+    ok = ok && okF;
     messages.push(okF ? 'Fréquence ✅' : `Fréquence ❌ (attendu ≈ ${ currentExercise.trueFreq.toFixed(3) } Hz)`);
   }
 
