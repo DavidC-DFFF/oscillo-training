@@ -580,3 +580,27 @@ function exportFullPNG() {
 
 // Bouton Export
 document.getElementById('btnExport')?.addEventListener('click', exportFullPNG);
+
+// --- Export : masqué par défaut + commandes console ---
+(function () {
+    const btn = document.getElementById('btnExport');
+    if (!btn) return;
+
+    // Masqué par défaut
+    btn.style.display = 'none';
+
+    // Commandes dispo dans la console
+    window.showExport = function (on = true) {
+        btn.style.display = on ? '' : 'none';
+    };
+    window.toggleExport = function () {
+        window.showExport(btn.style.display === 'none');
+    };
+
+    // Astuce : ?export=1 ou #export pour l'afficher au chargement
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('export') === '1' || location.hash.includes('export')) {
+        window.showExport(true);
+    }
+})();
+
