@@ -543,7 +543,7 @@ function exportFullPNG() {
     function drawNeedleFromRect(r, angleDeg) {
         const cx = ((r.left - bgRect.left) + r.width / 2) * scaleX;
         const cy = ((r.top - bgRect.top) + r.height / 2) * scaleY;
-        const len = Math.min(r.width * scaleX, r.height * scaleY) * 0.45;
+        const len = Math.min(r.width * scaleX, r.height * scaleY) * 0.40;
         const th = angleDeg * Math.PI / 180;
         const x2 = cx + Math.sin(th) * len;
         const y2 = cy - Math.cos(th) * len;
